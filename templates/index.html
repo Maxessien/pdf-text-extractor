@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>PDF to Text</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      /* Reset & body */
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+      }
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        padding: 2.5rem 1rem;
+        min-height: 100vh;
+        height: max-content;
+        background: #f4f4f9;
+      }
+
+      /* Card container */
+      .upload-container {
+        background: #fff;
+        padding: 30px 40px;
+        border-radius: 12px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        width: 95%;
+        max-width: 512px;
+      }
+
+      h1 {
+        margin-bottom: 20px;
+        color: #333;
+        font-size: 1.5em;
+      }
+
+      input[type="file"] {
+        display: none;
+      }
+
+      .file_box {
+        padding: 2rem 1rem;
+        border-radius: 8px;
+        border: 2px solid rgb(37, 37, 37);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 1rem;
+        margin-bottom: 20px;
+        height: max-content;
+        background: rgb(240, 239, 239);
+        cursor: pointer;
+      }
+
+      .file_box img {
+        width: 3rem;
+      }
+
+      .file_box p {
+        font-size: 1rem;
+        font-weight: 500;
+        color: rgb(26, 26, 26);
+        width: 100%;
+        word-break: break-all;
+        text-overflow: ellipsis;
+      }
+
+      button,
+      .copy_btn {
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 1em;
+        width: 100%;
+        transition: background 0.3s ease;
+      }
+
+      button:hover {
+        background-color: #45a049;
+      }
+
+      p.note {
+        font-size: 0.85em;
+        color: #666;
+        margin-top: 10px;
+        font-weight: 500;
+      }
+
+      .extracted_text_section {
+        width: 100%;
+        margin-top: 2rem;
+      }
+
+      .visible {
+        display: block;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      .extracted_text_section h2 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: rgb(51, 51, 51);
+        margin-bottom: 1.5rem;
+        text-align: center;
+      }
+
+      .extracted_text_section p {
+        width: 100%;
+        max-width: 512px;
+        font-size: 1rem;
+        font-weight: 500;
+        color: rgb(37, 37, 37);
+        word-break: break-all;
+        overflow-y: auto;
+        height: 380px;
+        border-radius: 10px;
+        box-shadow: 0px 0px 10px -5px black;
+        background: white;
+        text-align: left;
+        padding: 1.5rem 1rem;
+        margin-bottom: 1.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="upload-container">
+      <h1>Upload PDF</h1>
+
+      <form id="form">
+        <input
+          type="file"
+          id="file_input"
+          name="file"
+          accept="application/pdf"
+          required
+        />
+        <label for="file_input" class="file_box">
+          <img src="/assets/upload.png" alt="upload icon" />
+          <p id="upload_text">Upload PDF</p>
+        </label>
+        <button type="submit">Upload</button>
+      </form>
+
+      <p class="note">Only PDF files are allowed.</p>
+
+      <section class="extracted_text_section hidden">
+        <h2>Extracted Text</h2>
+        <p id="extracted_text"></p>
+        <button class="copy_btn">Copy Text</button>
+      </section>
+    </div>
+
+    <script>
+      const inputFile = document.querySelector("#file_input");
+      const inputText = document.getElementById("upload_text");
+      const copyBtn = document.querySelector(".copy_btn");
+      const form = document.getElementById("form");
+      const extractedText = document.querySelector("#extracted_text");
+
+      inputFile.addEventListener("change", () => {
+        inputText.textContent = inputFile?.files[0]?.name || "Unknown";
+      });
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!inputFile?.files[0]) return;
+        try {
+          const formData = new FormData();
+          formData.append("pdf_file", inputFile?.files[0]);
+          const res = await fetch("/upload", {
+            method: "POST",
+            body: formData,
+          });
+          const text = await res.json();
+          console.log(text.extracted_text.toString());
+          extractedText.textContent = text.extracted_text.toString();
+          document
+            .querySelector(".extracted_text_section")
+            .classList.replace("hidden", "visible");
+          inputText.textContent = "Upload PDF";
+          window.alert("Text extracted successfully");
+        } catch (err) {
+          console.log(err);
+          window.alert("Extraction failed");
+        }
+      });
+
+      copyBtn.addEventListener("click", (e) => {
+        navigator.clipboard
+          .writeText(extractedText?.textContent || "")
+          .then(() => {
+            e.target.textContent = "Copied"
+            setTimeout(()=>e.target.textContent = "Copy Text", 3000)
+          })
+          .catch(() => alert("Failed to copy"));
+      });
+    </script>
+  </body>
+</html>
